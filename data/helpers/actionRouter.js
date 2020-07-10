@@ -34,21 +34,57 @@ router.post(
   },
 );
 
-router.get('/', (req, res)=>{
-  Actions.get().then(action => {
-    res.status(200).json(action)
-  }).catch(err => {
-    res.status(500).json({error: 'unable to get action'})
-  })
-})
+router.get('/', (req, res) => {
+  Actions.get()
+    .then((action) => {
+      res.status(200).json(action);
+    })
+    .catch((err) => {
+      res.status(500).json({ error: 'unable to get action' });
+    });
+});
 
 router.get('/:id', validateActionId, (req, res) => {
-  res.status(200).json(req.action)
-})
+  Actions.get(req.params.id)
+    .then((action) => {
+      res.status(200).json(action);
+    })
+    .catch((err) => {
+      res.status(500).json({ error: 'unable to get action' });
+    });
+});
 
 router.delete('/:id', validateActionId, (req, res) => {
+  Actions.remove(req.params.id)
+    .then((deleted) => {
+      Actions.get()
+        .then((action) => {
+          res.status(200).json(action);
+        })
+        .catch((err) => {
+          res.status(500).json({ error: 'unable to get action' });
+        });
+    })
+    .catch((err) => {
+      res.status(500).json({ error: 'unable to delete action' });
+    });
+});
 
-})
+router.put('/:id', validateActionId, (req, res) => {
+  Actions.update(req.params.id, req.body)
+    .then((updated) => {
+      Actions.get(req.params.id)
+        .then((action) => {
+          res.status(200).json(action);
+        })
+        .catch((err) => {
+          res.status(500).json({ error: 'unable to get action' });
+        });
+    })
+    .catch((err) => {
+      res.status(500).json({ error: 'unable to update action' });
+    });
+});
 
 function validateActionId(req, res, next) {
   Projects.getProjectActions(req.params.id)
@@ -90,6 +126,8 @@ function validatePost(req, res, next) {
   let post = req.body;
   if (!post) {
     res.status(400).json({ message: 'missing project data' });
+  } else if (!post.project_id) {
+    res.status(400).json({ message: 'missing required project id' });
   } else if (!post.description) {
     res
       .status(400)
